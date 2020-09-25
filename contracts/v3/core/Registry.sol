@@ -8,16 +8,16 @@ import './Module.sol';
 
 contract Registry is Ownable, Module {
     mapping(bytes32 => address) registry;
-    mapping(address => bytes32) inverseRegistry;
+    mapping(address => bytes32) accessControlList;
 
     constructor() {
         bytes32 ownerId = keccak256("owner");
         registry[ownerId] = msg.sender;
-        inverseRegistry[msg.sender] = ownerId;
+        accessControlList[msg.sender] = ownerId;
     }
 
     modifier onlyModule {
-        require(inverseRegistry[msg.sender] != bytes32(0), "only a registered module is allowed to call this function");
+        require(accessControlList[msg.sender] != bytes32(0), "only a registered module is allowed to call this function");
         _;
     }
 
@@ -26,18 +26,18 @@ contract Registry is Ownable, Module {
         require(moduleAddress != address(0x0), "module address must not be empty");
         require(registry[moduleId] == address(0x0), "module id already in use");
         registry[moduleId] = moduleAddress;
-        inverseRegistry[moduleAddress] = moduleId;
+        accessControlList[moduleAddress] = moduleId;
     }
 
     function removeModule(bytes32 moduleId) onlyModule external {
         require(moduleId != bytes32(0), "module id must not be empty");
         require(registry[moduleId] != address(0x0), "module not registered");
-        delete inverseRegistry[registry[moduleId]];
+        delete accessControlList[registry[moduleId]];
         delete registry[moduleId];
     }
 
     function isModule(address module) public view returns (bool) {
-        return inverseRegistry[module] != bytes32(0);
+        return accessControlList[module] != bytes32(0);
     }
 
     function getAddress(bytes32 moduleId) view external returns(address) {
